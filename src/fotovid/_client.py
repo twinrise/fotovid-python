@@ -247,7 +247,7 @@ class _Audio:
     def __init__(self, client: Fotovid) -> None:
         self._client = client
 
-    def crop(
+    def trim(
         self,
         *,
         source_url: str,
@@ -257,5 +257,5 @@ class _Audio:
     ) -> MediaResult:
         params = _clean({"start": start, "end": end})
         return _media(
-            self._client._post("/v1/audio/crop", source_url, params, idempotency_key)
+            self._client._post("/v1/audio/trim", source_url, params, idempotency_key)
         )

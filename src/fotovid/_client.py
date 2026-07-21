@@ -107,7 +107,12 @@ class Fotovid:
                 detail = json.loads(error.read().decode("utf-8"))
             except Exception:
                 detail = None
-            raise FotovidError(error.code, detail) from None
+            ra: int | None = None
+            try:
+                ra = int(error.headers.get("Retry-After"))
+            except (TypeError, ValueError):
+                ra = None
+            raise FotovidError(error.code, detail, retry_after=ra) from None
 
 
 class _Video:
@@ -132,6 +137,13 @@ class _Video:
         preset: X264Preset | None = None,
         idempotency_key: str | None = None,
     ) -> MediaResult:
+        """Overlay a text and/or image watermark onto a video.
+
+        ``opacity`` and ``scale`` must be > 0 (0 is rejected server-side with a
+        422). ``text`` must be <= 1000 characters. ``font_color`` is a color name
+        or ``#RRGGBB`` / ``#RRGGBBAA``. The client deliberately does not validate
+        these — the server is the source of truth.
+        """
         params = _clean(
             {
                 "watermark_type": watermark_type,
@@ -221,6 +233,13 @@ class _Image:
         quality: int | None = None,
         idempotency_key: str | None = None,
     ) -> MediaResult:
+        """Overlay a text and/or image watermark onto an image.
+
+        ``opacity`` and ``scale`` must be > 0 (0 is rejected server-side with a
+        422). ``text`` must be <= 1000 characters. ``font_color`` is a color name
+        or ``#RRGGBB`` / ``#RRGGBBAA``. The client deliberately does not validate
+        these — the server is the source of truth.
+        """
         params = _clean(
             {
                 "watermark_type": watermark_type,

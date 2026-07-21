@@ -6,7 +6,9 @@ from typing import Any
 class FotovidError(Exception):
     """Raised when the Fotovid API returns a non-2xx response."""
 
-    def __init__(self, status: int, detail: Any = None) -> None:
+    def __init__(
+        self, status: int, detail: Any = None, retry_after: int | None = None
+    ) -> None:
         message: str | None = None
         if isinstance(detail, dict):
             candidate = detail.get("detail") or detail.get("message")
@@ -15,3 +17,4 @@ class FotovidError(Exception):
         super().__init__(message or f"Fotovid API request failed with status {status}")
         self.status = status
         self.detail = detail
+        self.retry_after = retry_after

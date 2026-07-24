@@ -172,10 +172,12 @@ class _Video:
         self,
         *,
         source_url: str,
-        start: float | None = None,
-        end: float | None = None,
+        start: float,
+        end: float,
         idempotency_key: str | None = None,
     ) -> MediaResult:
+        """Cut a clip between ``start`` and ``end`` (seconds). Both are required
+        by the API; ``end`` must be greater than ``start``."""
         params = _clean({"start": start, "end": end})
         return _media(
             self._client._post("/v1/video/trim", source_url, params, idempotency_key)
@@ -272,10 +274,12 @@ class _Audio:
         self,
         *,
         source_url: str,
-        start: float | None = None,
-        end: float | None = None,
+        start: float,
+        end: float,
         idempotency_key: str | None = None,
     ) -> MediaResult:
+        """Slice an audio file to ``start``–``end`` (seconds). Both are required
+        by the API; ``end`` must be greater than ``start``."""
         params = _clean({"start": start, "end": end})
         return _media(
             self._client._post("/v1/audio/trim", source_url, params, idempotency_key)

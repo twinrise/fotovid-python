@@ -18,7 +18,7 @@ def test_client_namespaces() -> None:
     assert callable(client.video.thumbnail)
     assert callable(client.video.probe)
     assert callable(client.image.watermark)
-    assert callable(client.audio.crop)
+    assert callable(client.audio.trim)
 
 
 def test_missing_api_key(monkeypatch: pytest.MonkeyPatch) -> None:

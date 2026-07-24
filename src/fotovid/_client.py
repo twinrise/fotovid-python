@@ -108,10 +108,12 @@ class Fotovid:
             except Exception:
                 detail = None
             ra: int | None = None
-            try:
-                ra = int(error.headers.get("Retry-After"))
-            except (TypeError, ValueError):
-                ra = None
+            raw_retry_after = error.headers.get("Retry-After")
+            if raw_retry_after is not None:
+                try:
+                    ra = int(raw_retry_after)
+                except ValueError:
+                    pass
             raise FotovidError(error.code, detail, retry_after=ra) from None
 
 

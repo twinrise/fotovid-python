@@ -4,8 +4,6 @@ Typed Python client for the [Fotovid](https://fotovid.co) media API — run
 ffmpeg-style operations (watermark, trim, extract audio, thumbnails…) over one
 HTTPS call, with **zero dependencies** (standard library only).
 
-> **Status: pre-release.** Not yet published to PyPI.
-
 ## Install
 
 ```bash

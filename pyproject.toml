@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "fotovid"
-version = "0.1.0"
+dynamic = ["version"]
 description = "Typed Python client for the Fotovid media API"
 readme = "README.md"
 requires-python = ">=3.9"
@@ -30,6 +30,9 @@ dependencies = []
 Homepage = "https://fotovid.co"
 Repository = "https://github.com/twinrise/fotovid-python"
 Issues = "https://github.com/twinrise/fotovid-python/issues"
+
+[tool.hatch.version]
+path = "src/fotovid/_version.py"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/fotovid"]

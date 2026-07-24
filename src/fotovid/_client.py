@@ -16,6 +16,7 @@ from ._types import (
     WatermarkType,
     X264Preset,
 )
+from ._version import __version__
 
 DEFAULT_BASE_URL = "https://api.fotovid.co"
 
@@ -92,6 +93,10 @@ class Fotovid:
             headers={
                 "Content-Type": "application/json",
                 "Authorization": f"Bearer {self._api_key}",
+                # An explicit UA is required: the default urllib UA
+                # ("Python-urllib/x.y") is blocked by the edge (Cloudflare) with a
+                # 403 before the request ever reaches the API.
+                "User-Agent": f"fotovid-python/{__version__}",
                 # Billed endpoints require an idempotency key; default to a fresh
                 # UUID per call, overridable to make a retry replay (not re-charge).
                 "Idempotency-Key": idempotency_key or str(uuid.uuid4()),

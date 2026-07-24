@@ -1,13 +1,12 @@
 from __future__ import annotations
 
-import json
 import os
-import urllib.error
-import urllib.request
 import uuid
 from typing import Any
 
-from ._errors import FotovidError
+from ._http import clean as _clean
+from ._http import request_json
+from ._tasks import _Tasks
 from ._types import (
     ImageFormat,
     MediaResult,
@@ -16,14 +15,8 @@ from ._types import (
     WatermarkType,
     X264Preset,
 )
-from ._version import __version__
 
 DEFAULT_BASE_URL = "https://api.fotovid.co"
-
-
-def _clean(params: dict[str, Any]) -> dict[str, Any]:
-    """Drop keys whose value is None so we only send provided params."""
-    return {key: value for key, value in params.items() if value is not None}
 
 
 def _media(data: dict[str, Any]) -> MediaResult:
@@ -77,6 +70,9 @@ class Fotovid:
         self.video = _Video(self)
         self.image = _Image(self)
         self.audio = _Audio(self)
+        #: Async task surface — submit larger jobs than sync accepts, then poll
+        #: for the result.
+        self.tasks = _Tasks(self)
 
     def _post(
         self,
@@ -85,41 +81,19 @@ class Fotovid:
         params: dict[str, Any],
         idempotency_key: str | None,
     ) -> dict[str, Any]:
-        body = json.dumps({"source_url": source_url, "params": params}).encode("utf-8")
-        request = urllib.request.Request(
-            self._base_url + path,
-            data=body,
+        return request_json(
+            base_url=self._base_url,
+            api_key=self._api_key,
+            timeout=self._timeout,
+            path=path,
             method="POST",
-            headers={
-                "Content-Type": "application/json",
-                "Authorization": f"Bearer {self._api_key}",
-                # An explicit UA is required: the default urllib UA
-                # ("Python-urllib/x.y") is blocked by the edge (Cloudflare) with a
-                # 403 before the request ever reaches the API.
-                "User-Agent": f"fotovid-python/{__version__}",
+            body={"source_url": source_url, "params": params},
+            extra_headers={
                 # Billed endpoints require an idempotency key; default to a fresh
                 # UUID per call, overridable to make a retry replay (not re-charge).
-                "Idempotency-Key": idempotency_key or str(uuid.uuid4()),
+                "Idempotency-Key": idempotency_key or str(uuid.uuid4())
             },
         )
-        try:
-            with urllib.request.urlopen(request, timeout=self._timeout) as response:
-                data: dict[str, Any] = json.loads(response.read().decode("utf-8"))
-                return data
-        except urllib.error.HTTPError as error:
-            detail: Any = None
-            try:
-                detail = json.loads(error.read().decode("utf-8"))
-            except Exception:
-                detail = None
-            ra: int | None = None
-            raw_retry_after = error.headers.get("Retry-After")
-            if raw_retry_after is not None:
-                try:
-                    ra = int(raw_retry_after)
-                except ValueError:
-                    pass
-            raise FotovidError(error.code, detail, retry_after=ra) from None
 
 
 class _Video:

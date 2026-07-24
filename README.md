@@ -4,8 +4,6 @@ Typed Python client for the [Fotovid](https://fotovid.co) media API — run
 ffmpeg-style operations (watermark, trim, extract audio, thumbnails…) over one
 HTTPS call, with **zero dependencies** (standard library only).
 
-> **Status: pre-release.** Not yet published to PyPI.
-
 ## Install
 
 ```bash
@@ -38,7 +36,7 @@ print(result.url)  # presigned URL to the finished file — store your own copy
 | `client.image.watermark(...)` | `POST /v1/image/watermark` |
 | `client.video.trim(...)` | `POST /v1/video/trim` |
 | `client.video.extract_audio(...)` | `POST /v1/video/extract-audio` |
-| `client.audio.crop(...)` | `POST /v1/audio/crop` |
+| `client.audio.trim(...)` | `POST /v1/audio/trim` |
 | `client.video.thumbnail(...)` | `POST /v1/video/extract-cover` |
 | `client.video.probe(...)` | `POST /v1/video/probe` |
 

@@ -107,7 +107,14 @@ class Fotovid:
                 detail = json.loads(error.read().decode("utf-8"))
             except Exception:
                 detail = None
-            raise FotovidError(error.code, detail) from None
+            ra: int | None = None
+            raw_retry_after = error.headers.get("Retry-After")
+            if raw_retry_after is not None:
+                try:
+                    ra = int(raw_retry_after)
+                except ValueError:
+                    pass
+            raise FotovidError(error.code, detail, retry_after=ra) from None
 
 
 class _Video:
@@ -132,6 +139,13 @@ class _Video:
         preset: X264Preset | None = None,
         idempotency_key: str | None = None,
     ) -> MediaResult:
+        """Overlay a text and/or image watermark onto a video.
+
+        ``opacity`` and ``scale`` must be > 0 (0 is rejected server-side with a
+        422). ``text`` must be <= 1000 characters. ``font_color`` is a color name
+        or ``#RRGGBB`` / ``#RRGGBBAA``. The client deliberately does not validate
+        these — the server is the source of truth.
+        """
         params = _clean(
             {
                 "watermark_type": watermark_type,
@@ -158,10 +172,12 @@ class _Video:
         self,
         *,
         source_url: str,
-        start: float | None = None,
-        end: float | None = None,
+        start: float,
+        end: float,
         idempotency_key: str | None = None,
     ) -> MediaResult:
+        """Cut a clip between ``start`` and ``end`` (seconds). Both are required
+        by the API; ``end`` must be greater than ``start``."""
         params = _clean({"start": start, "end": end})
         return _media(
             self._client._post("/v1/video/trim", source_url, params, idempotency_key)
@@ -221,6 +237,13 @@ class _Image:
         quality: int | None = None,
         idempotency_key: str | None = None,
     ) -> MediaResult:
+        """Overlay a text and/or image watermark onto an image.
+
+        ``opacity`` and ``scale`` must be > 0 (0 is rejected server-side with a
+        422). ``text`` must be <= 1000 characters. ``font_color`` is a color name
+        or ``#RRGGBB`` / ``#RRGGBBAA``. The client deliberately does not validate
+        these — the server is the source of truth.
+        """
         params = _clean(
             {
                 "watermark_type": watermark_type,
@@ -247,15 +270,17 @@ class _Audio:
     def __init__(self, client: Fotovid) -> None:
         self._client = client
 
-    def crop(
+    def trim(
         self,
         *,
         source_url: str,
-        start: float | None = None,
-        end: float | None = None,
+        start: float,
+        end: float,
         idempotency_key: str | None = None,
     ) -> MediaResult:
+        """Slice an audio file to ``start``–``end`` (seconds). Both are required
+        by the API; ``end`` must be greater than ``start``."""
         params = _clean({"start": start, "end": end})
         return _media(
-            self._client._post("/v1/audio/crop", source_url, params, idempotency_key)
+            self._client._post("/v1/audio/trim", source_url, params, idempotency_key)
         )

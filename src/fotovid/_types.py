@@ -28,7 +28,9 @@ class MediaResult:
 
     id: str
     type: str
-    # Presigned download URL — expires; store your own copy.
+    # Opaque, time-limited public URL on a custom domain
+    # (e.g. https://tempfile.fotovid.co/...). Do not parse its query string;
+    # it still expires (see expires_at) — keep your own copy.
     url: str
     expires_at: str
     duration: float | None = None

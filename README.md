@@ -9,6 +9,23 @@ metadata. POST a source URL, get back the finished file over one HTTPS call,
 with **zero dependencies** (standard library only — no ffmpeg binary, nothing
 native to compile).
 
+**Full docs, guides, and API reference:** [fotovid.co/docs](https://fotovid.co/docs)
+
+## Why Fotovid
+
+- **No ffmpeg to install or maintain.** No binary in your container/Lambda, no
+  native build step, no version drift across machines — zero runtime
+  dependencies, standard library only.
+- **One call, typed end to end.** Parameter names match the API 1:1;
+  `MediaResult`/`ProbeResult`/`Task` are dataclasses, nothing to guess.
+- **Sync for quick jobs, async for large ones.** Small/short media returns in
+  the same call; video over ~720p or 15s goes through the async task API
+  instead of failing outright.
+- **Idempotent by default.** Every billed call gets a fresh idempotency key
+  automatically — retry safely without a double charge.
+- **Hosted output.** Every operation returns a URL to the finished file; no
+  storage bucket to provision or clean up yourself.
+
 ## Install
 
 ```bash
@@ -48,6 +65,51 @@ print(result.url)  # hosted, time-limited URL — see expires_at, store your own
 Parameter names match the API 1:1. Every media operation returns a
 `MediaResult` (`id`, `type`, `url`, `expires_at`, `duration`); `probe` returns a
 `ProbeResult` with video metadata.
+
+## Examples
+
+### Video
+
+```python
+# Text watermark, bottom-right corner.
+client.video.watermark(
+    source_url="https://cdn.example.com/clip.mp4",
+    watermark_type="text",
+    text="© Acme Inc.",
+    position="bottom-right",
+)
+
+# Cut a 10s clip.
+client.video.trim(source_url="https://cdn.example.com/clip.mp4", start=5, end=15)
+
+# Pull out the audio track as an MP3.
+client.video.extract_audio(source_url="https://cdn.example.com/clip.mp4")
+
+# Grab a frame at 2.5s as a thumbnail.
+client.video.thumbnail(source_url="https://cdn.example.com/clip.mp4", at=2.5)
+
+# Metadata only — no file produced.
+meta = client.video.probe(source_url="https://cdn.example.com/clip.mp4")
+print(meta.width, meta.height, meta.duration_sec, meta.fps, meta.codec)
+```
+
+### Image
+
+```python
+# Logo watermark, scaled to 20% of the source width.
+client.image.watermark(
+    source_url="https://cdn.example.com/photo.jpg",
+    watermark_type="image",
+    watermark_image_url="https://cdn.example.com/logo.png",
+    scale=0.2,
+)
+```
+
+### Audio
+
+```python
+client.audio.trim(source_url="https://cdn.example.com/track.mp3", start=0, end=30)
+```
 
 ## Async (large or long video)
 
@@ -124,6 +186,13 @@ Fotovid(
     timeout=60.0,  # optional, seconds
 )
 ```
+
+## Documentation
+
+- [Getting started](https://fotovid.co/docs/getting-started/quickstart)
+- [API reference](https://fotovid.co/docs/reference/http) — every endpoint, with request/response schemas
+- [Sync vs async guide](https://fotovid.co/docs/guides/sync-vs-async)
+- [Pricing](https://fotovid.co/pricing)
 
 ## License
 

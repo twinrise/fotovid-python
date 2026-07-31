@@ -70,6 +70,15 @@ class Task:
     # check this field.
     error: TaskError | None = None
     task_type: str | None = None
+    # The source URL exactly as submitted. Also delivered to your webhook and
+    # retained in the delivery record.
+    source_url: str | None = None
+    # The processing params exactly as submitted. None for types that take none.
+    params: dict[str, Any] | None = None
+    # The labels passed as ``metadata``, returned verbatim. None when none were
+    # supplied; on an idempotent replay this is the *stored* task's metadata,
+    # not what the replay sent.
+    metadata: dict[str, str] | None = None
     # Produced artifacts, once status is "succeeded". Order is not
     # guaranteed — read by kind.
     outputs: list[TaskOutput] | None = None
@@ -112,6 +121,9 @@ def _task(data: dict[str, Any]) -> Task:
         urls=data["urls"],
         error=error,
         task_type=data.get("task_type"),
+        source_url=data.get("source_url"),
+        params=data.get("params"),
+        metadata=data.get("metadata"),
         outputs=outputs,
         started_at=data.get("started_at"),
         completed_at=data.get("completed_at"),
@@ -146,6 +158,7 @@ class _Tasks:
         idempotency_key: str | None = None,
         webhook: str | None = None,
         webhook_events_filter: list[WebhookEvent] | None = None,
+        metadata: dict[str, str] | None = None,
     ) -> Task:
         body = clean(
             {
@@ -155,6 +168,7 @@ class _Tasks:
                 "idempotency_key": idempotency_key or str(uuid.uuid4()),
                 "webhook": webhook,
                 "webhook_events_filter": webhook_events_filter,
+                "metadata": metadata,
             }
         )
         data = request_json(
@@ -203,6 +217,7 @@ class _TasksVideo:
         idempotency_key: str | None = None,
         webhook: str | None = None,
         webhook_events_filter: list[WebhookEvent] | None = None,
+        metadata: dict[str, str] | None = None,
     ) -> Task:
         params = clean(
             {
@@ -227,6 +242,7 @@ class _TasksVideo:
             idempotency_key=idempotency_key,
             webhook=webhook,
             webhook_events_filter=webhook_events_filter,
+            metadata=metadata,
         )
 
     def trim(
@@ -238,6 +254,7 @@ class _TasksVideo:
         idempotency_key: str | None = None,
         webhook: str | None = None,
         webhook_events_filter: list[WebhookEvent] | None = None,
+        metadata: dict[str, str] | None = None,
     ) -> Task:
         return self._tasks.create(
             type="video.trim",
@@ -246,6 +263,7 @@ class _TasksVideo:
             idempotency_key=idempotency_key,
             webhook=webhook,
             webhook_events_filter=webhook_events_filter,
+            metadata=metadata,
         )
 
     def extract_audio(
@@ -255,6 +273,7 @@ class _TasksVideo:
         idempotency_key: str | None = None,
         webhook: str | None = None,
         webhook_events_filter: list[WebhookEvent] | None = None,
+        metadata: dict[str, str] | None = None,
     ) -> Task:
         return self._tasks.create(
             type="video.audio",
@@ -262,6 +281,7 @@ class _TasksVideo:
             idempotency_key=idempotency_key,
             webhook=webhook,
             webhook_events_filter=webhook_events_filter,
+            metadata=metadata,
         )
 
     def thumbnail(
@@ -274,6 +294,7 @@ class _TasksVideo:
         idempotency_key: str | None = None,
         webhook: str | None = None,
         webhook_events_filter: list[WebhookEvent] | None = None,
+        metadata: dict[str, str] | None = None,
     ) -> Task:
         params = clean({"at": at, "output_format": output_format, "quality": quality})
         return self._tasks.create(
@@ -283,6 +304,7 @@ class _TasksVideo:
             idempotency_key=idempotency_key,
             webhook=webhook,
             webhook_events_filter=webhook_events_filter,
+            metadata=metadata,
         )
 
 
@@ -308,6 +330,7 @@ class _TasksImage:
         idempotency_key: str | None = None,
         webhook: str | None = None,
         webhook_events_filter: list[WebhookEvent] | None = None,
+        metadata: dict[str, str] | None = None,
     ) -> Task:
         params = clean(
             {
@@ -331,6 +354,7 @@ class _TasksImage:
             idempotency_key=idempotency_key,
             webhook=webhook,
             webhook_events_filter=webhook_events_filter,
+            metadata=metadata,
         )
 
 
@@ -347,6 +371,7 @@ class _TasksAudio:
         idempotency_key: str | None = None,
         webhook: str | None = None,
         webhook_events_filter: list[WebhookEvent] | None = None,
+        metadata: dict[str, str] | None = None,
     ) -> Task:
         return self._tasks.create(
             type="audio.trim",
@@ -355,4 +380,5 @@ class _TasksAudio:
             idempotency_key=idempotency_key,
             webhook=webhook,
             webhook_events_filter=webhook_events_filter,
+            metadata=metadata,
         )

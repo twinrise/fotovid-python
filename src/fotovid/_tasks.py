@@ -70,11 +70,10 @@ class Task:
     # check this field.
     error: TaskError | None = None
     task_type: str | None = None
-    # The source URL exactly as submitted. Also delivered to your webhook and
-    # retained in the delivery record.
-    source_url: str | None = None
-    # The processing params exactly as submitted. None for types that take none.
-    params: dict[str, Any] | None = None
+    # The input exactly as submitted: source_url plus this task type's
+    # processing params, flattened into one object. Also delivered to your
+    # webhook and retained in the delivery record.
+    input: dict[str, Any] | None = None
     # The labels passed as ``metadata``, returned verbatim. None when none were
     # supplied; on an idempotent replay this is the *stored* task's metadata,
     # not what the replay sent.
@@ -121,8 +120,7 @@ def _task(data: dict[str, Any]) -> Task:
         urls=data["urls"],
         error=error,
         task_type=data.get("task_type"),
-        source_url=data.get("source_url"),
-        params=data.get("params"),
+        input=data.get("input"),
         metadata=data.get("metadata"),
         outputs=outputs,
         started_at=data.get("started_at"),
@@ -153,18 +151,26 @@ class _Tasks:
         self,
         *,
         type: TaskType,
-        source_url: str,
-        params: dict[str, Any] | None = None,
+        input: dict[str, Any],
         idempotency_key: str | None = None,
         webhook: str | None = None,
         webhook_events_filter: list[WebhookEvent] | None = None,
         metadata: dict[str, str] | None = None,
     ) -> Task:
+        """Submit a task.
+
+        ``input`` is the source media URL plus this task type's processing
+        params, in one flat object -- the same shape the typed helpers take::
+
+            {"source_url": "https://...", "watermark_type": "text", "text": "hi"}
+
+        Breaking change: this replaces the old ``source_url=`` + ``params=``
+        pair. The typed helpers below are unchanged.
+        """
         body = clean(
             {
                 "type": type,
-                "source_url": source_url,
-                "params": params,
+                "input": input,
                 "idempotency_key": idempotency_key or str(uuid.uuid4()),
                 "webhook": webhook,
                 "webhook_events_filter": webhook_events_filter,
@@ -237,8 +243,7 @@ class _TasksVideo:
         )
         return self._tasks.create(
             type="video.watermark",
-            source_url=source_url,
-            params=params,
+            input={"source_url": source_url, **params},
             idempotency_key=idempotency_key,
             webhook=webhook,
             webhook_events_filter=webhook_events_filter,
@@ -258,8 +263,7 @@ class _TasksVideo:
     ) -> Task:
         return self._tasks.create(
             type="video.trim",
-            source_url=source_url,
-            params={"start": start, "end": end},
+            input={"source_url": source_url, "start": start, "end": end},
             idempotency_key=idempotency_key,
             webhook=webhook,
             webhook_events_filter=webhook_events_filter,
@@ -277,7 +281,7 @@ class _TasksVideo:
     ) -> Task:
         return self._tasks.create(
             type="video.audio",
-            source_url=source_url,
+            input={"source_url": source_url},
             idempotency_key=idempotency_key,
             webhook=webhook,
             webhook_events_filter=webhook_events_filter,
@@ -299,8 +303,7 @@ class _TasksVideo:
         params = clean({"at": at, "output_format": output_format, "quality": quality})
         return self._tasks.create(
             type="video.cover",
-            source_url=source_url,
-            params=params,
+            input={"source_url": source_url, **params},
             idempotency_key=idempotency_key,
             webhook=webhook,
             webhook_events_filter=webhook_events_filter,
@@ -349,8 +352,7 @@ class _TasksImage:
         )
         return self._tasks.create(
             type="image.watermark",
-            source_url=source_url,
-            params=params,
+            input={"source_url": source_url, **params},
             idempotency_key=idempotency_key,
             webhook=webhook,
             webhook_events_filter=webhook_events_filter,
@@ -375,8 +377,7 @@ class _TasksAudio:
     ) -> Task:
         return self._tasks.create(
             type="audio.trim",
-            source_url=source_url,
-            params={"start": start, "end": end},
+            input={"source_url": source_url, "start": start, "end": end},
             idempotency_key=idempotency_key,
             webhook=webhook,
             webhook_events_filter=webhook_events_filter,

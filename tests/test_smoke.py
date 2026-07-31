@@ -55,8 +55,11 @@ def test_task_metadata_round_trip(monkeypatch: pytest.MonkeyPatch) -> None:
             "created_at": "2026-06-03T12:00:00Z",
             "urls": {"get": "https://api.fotovid.co/v1/tasks/01JAB"},
             "error": None,
-            "source_url": "https://cdn.example.com/clip.mp4",
-            "params": {"start": 0, "end": 30},
+            "input": {
+                "source_url": "https://cdn.example.com/clip.mp4",
+                "start": 0,
+                "end": 30,
+            },
             "metadata": {"order_id": "A-1001"},
         }
 
@@ -71,8 +74,20 @@ def test_task_metadata_round_trip(monkeypatch: pytest.MonkeyPatch) -> None:
 
     assert captured["body"]["metadata"] == {"order_id": "A-1001"}
     assert task.metadata == {"order_id": "A-1001"}
-    assert task.source_url == "https://cdn.example.com/clip.mp4"
-    assert task.params == {"start": 0, "end": 30}
+    # The echo is one flattened `input` object.
+    assert task.input == {
+        "source_url": "https://cdn.example.com/clip.mp4",
+        "start": 0,
+        "end": 30,
+    }
+    # ...and the request body carries the same shape.
+    assert captured["body"]["input"] == {
+        "source_url": "https://cdn.example.com/clip.mp4",
+        "start": 0,
+        "end": 30,
+    }
+    assert "source_url" not in captured["body"]
+    assert "params" not in captured["body"]
 
 
 def test_task_metadata_omitted_when_absent(monkeypatch: pytest.MonkeyPatch) -> None:

@@ -146,6 +146,32 @@ else:
 `tasks.create`/`tasks.get`. There's no built-in polling helper — the loop
 above is the whole pattern. `probe` has no async form; it's sync-only.
 
+### Your own metadata
+
+Pass `metadata` to tag a task with your own labels. They come back on the `Task`
+and in the webhook payload, so a callback can be matched against your records
+without a second lookup:
+
+```python
+task = client.tasks.video.trim(
+    source_url="https://cdn.example.com/clip.mp4",
+    start=0,
+    end=30,
+    metadata={"order_id": "A-1001", "tenant": "acme"},
+    webhook="https://example.com/hooks/fotovid",
+)
+
+task.metadata  # {"order_id": "A-1001", "tenant": "acme"}
+```
+
+The platform never interprets `metadata` — it takes no part in routing, auth,
+billing or idempotency. At most 50 keys, keys ≤40 chars (no square brackets),
+string values ≤500 chars. Don't put secrets in it: it is returned to anyone who
+can read the task and delivered to your webhook endpoint. On an idempotent replay
+the stored task's metadata comes back and the one you sent is ignored.
+
+`Task` also echoes `source_url` and `params` back exactly as submitted.
+
 ## Sync vs async
 
 | | Sync (`client.video.*`, …) | Async (`client.tasks.*`) |

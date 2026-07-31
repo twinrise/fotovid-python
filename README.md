@@ -170,7 +170,30 @@ string values ≤500 chars. Don't put secrets in it: it is returned to anyone wh
 can read the task and delivered to your webhook endpoint. On an idempotent replay
 the stored task's metadata comes back and the one you sent is ignored.
 
-`Task` also echoes `source_url` and `params` back exactly as submitted.
+`Task` also echoes `input` back exactly as submitted — the `source_url` plus that task type's params, flattened into one object.
+
+### Breaking in 1.0.0: the `input` envelope
+
+The async wire moved to an `input` envelope. **The typed helpers above are
+unchanged** — `tasks.video.watermark(source_url=..., **params)` still takes flat
+keyword arguments. Only two things moved:
+
+```python
+p = {"start": 0, "end": 30}
+
+# tasks.create — the low-level escape hatch
+client.tasks.create(type="video.trim", source_url=url, params=p)  # ❌ 0.x
+client.tasks.create(type="video.trim", input={"source_url": url, **p})  # ✅ 1.0
+
+# Task — the two echo fields collapsed into one
+task.source_url, task.params  # ❌ 0.x
+task.input  # ✅ 1.0
+```
+
+The server rejects the old request shape with a `400` whose `errors[].field` is
+`body.input.source_url`. The response change is silent — `task.source_url` and
+`task.params` simply become `None` — so grep for them when you upgrade. Sync
+methods (`client.video.*`, `client.image.*`, `client.audio.*`) are untouched.
 
 ## Sync vs async
 
